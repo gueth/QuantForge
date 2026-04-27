@@ -3,7 +3,7 @@ os.add_dll_directory(r"C:\Users\bayih\AppData\Local\Programs\Python\Python312")
 os.add_dll_directory(r"C:\Users\bayih\AppData\Local\Programs\Python\Python312\libs")
 
 import sys
-sys.path.append(r"C:\Users\bayih\PycharmProjects\QuantDevProject\QuantForge\01_pricing_engine")
+sys.path.append(r"/01_pricing_engine")
 
 import mc_pricer
 import time
