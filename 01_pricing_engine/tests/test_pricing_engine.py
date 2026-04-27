@@ -13,7 +13,7 @@ This script tests:
 - Performance benchmarking
 """
 # ============================================================
-# IMPORTS (from your pricing module)
+# IMPORTS
 # ============================================================
 from black_scholes import bs_call_price, bs_greeks
 from monte_carlo import mc_call_price, mc_barrier_call_price
