@@ -1,7 +1,7 @@
 """
 QuantForge - Module 2: Python API Layer
 ========================================
-High-level Python wrapper around the C++ risk engine.
+High-level Python wrapper around the risk engine.
 
 Classes
 -------
@@ -18,30 +18,89 @@ load_fama_french()      : Download real FF3 daily factors from Kenneth French.
 """
 from __future__ import annotations
 
-import sys
 import io
+import sys
 import zipfile
 import urllib.request
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
+from typing import Any, Optional, Protocol, runtime_checkable
 
 import numpy as np
 import pandas as pd
 from scipy.stats import norm as _norm
 
 # ---------------------------------------------------------------------------
-# C++ backend (optional) — falls back to pure Python when not compiled
+# Engine Protocol — structural interface shared by C++ and Python engines
 # ---------------------------------------------------------------------------
+
+@runtime_checkable
+class _RiskEngineProtocol(Protocol):
+    """
+    Structural interface that both the compiled C++ engine and the pure-Python
+    fallback must satisfy.  Using a Protocol (PEP 544) means Pylance infers
+    correct types for every ``self._engine`` call without requiring an ABC or
+    inheritance hierarchy.
+    """
+
+    def portfolio_returns(self) -> np.ndarray: ...
+
+    @property
+    def n_obs(self) -> int: ...
+
+    @property
+    def n_assets(self) -> int: ...
+
+    def var_historical(
+        self, confidence: float = ..., horizon: int = ...
+    ) -> float: ...
+
+    def var_parametric(
+        self, confidence: float = ..., horizon: int = ...
+    ) -> float: ...
+
+    def cvar_historical(
+        self, confidence: float = ..., horizon: int = ...
+    ) -> float: ...
+
+    def cvar_parametric(
+        self, confidence: float = ..., horizon: int = ...
+    ) -> float: ...
+
+    def full_report(
+        self, confidence: float = ..., horizon: int = ...
+    ) -> dict[str, Any]: ...
+
+    def pca(self, n_components: int = ...) -> dict[str, Any]: ...
+
+    def fama_french(
+        self,
+        factors: np.ndarray,
+        rf:      np.ndarray,
+        names:   list[str],
+    ) -> list[dict[str, Any]]: ...
+
+    def rolling_var(
+        self,
+        confidence: float = ...,
+        window:     int   = ...,
+        parametric: bool  = ...,
+    ) -> np.ndarray: ...
+
+
+# ---------------------------------------------------------------------------
+# C++ backend — optional, falls back to pure Python when not compiled
+# ---------------------------------------------------------------------------
+
 _HERE = Path(__file__).parent
 sys.path.insert(0, str(_HERE))
 
+_HAS_CPP: bool = False
 try:
-    import risk_engine_cpp as _cpp
+    import risk_engine_cpp as _cpp_module  # type: ignore[import-untyped]
     _HAS_CPP = True
 except ImportError:
-    _cpp = None
-    _HAS_CPP = False
+    _cpp_module = None  # type: ignore[assignment]
 
 CACHE_DIR = _HERE.parent / "data"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -53,24 +112,23 @@ FF3_URL = (
 
 
 # ---------------------------------------------------------------------------
-# Pure Python risk engine (fallback when C++ extension is not compiled)
+# Pure-Python risk engine  (satisfies _RiskEngineProtocol via duck typing)
 # ---------------------------------------------------------------------------
 
 class _PyRiskEngine:
     """
-    NumPy/SciPy implementation of the risk engine.
-    Mirrors the C++ RiskEngine API exactly so Portfolio works without
-    a compiled extension.
+    NumPy / SciPy implementation of the risk engine.
+    Mirrors the C++ RiskEngine API so Portfolio works without compilation.
     """
 
     def __init__(self, returns: np.ndarray, weights: np.ndarray) -> None:
-        self._returns      = returns          # shape (T, N)
-        self._weights      = weights          # shape (N,)
-        self._T            = returns.shape[0]
-        self._N            = returns.shape[1]
-        self._port_returns = returns @ weights # shape (T,)
+        self._returns:      np.ndarray = returns
+        self._weights:      np.ndarray = weights
+        self._T:            int        = returns.shape[0]
+        self._N:            int        = returns.shape[1]
+        self._port_returns: np.ndarray = returns @ weights
 
-    # -- accessors -----------------------------------------------------------
+    # -- Accessors -----------------------------------------------------------
     def portfolio_returns(self) -> np.ndarray:
         return self._port_returns.copy()
 
@@ -84,31 +142,33 @@ class _PyRiskEngine:
 
     # -- VaR / CVaR ----------------------------------------------------------
     def var_historical(self, confidence: float = 0.95, horizon: int = 1) -> float:
-        q = np.quantile(self._port_returns, 1.0 - confidence)
-        return float(-q * np.sqrt(horizon))
+        q = float(np.quantile(self._port_returns, 1.0 - confidence))
+        return -q * float(np.sqrt(horizon))
 
     def var_parametric(self, confidence: float = 0.95, horizon: int = 1) -> float:
-        mu    = self._port_returns.mean()
-        sigma = self._port_returns.std(ddof=1)
-        z     = _norm.ppf(1.0 - confidence)
-        return float(-(mu + z * sigma) * np.sqrt(horizon))
+        mu    = float(self._port_returns.mean())
+        sigma = float(self._port_returns.std(ddof=1))
+        z     = float(_norm.ppf(1.0 - confidence))
+        return -(mu + z * sigma) * float(np.sqrt(horizon))
 
     def cvar_historical(self, confidence: float = 0.95, horizon: int = 1) -> float:
-        q    = np.quantile(self._port_returns, 1.0 - confidence)
+        q    = float(np.quantile(self._port_returns, 1.0 - confidence))
         tail = self._port_returns[self._port_returns <= q]
         if len(tail) == 0:
             return 0.0
-        return float(-tail.mean() * np.sqrt(horizon))
+        return float(-tail.mean()) * float(np.sqrt(horizon))
 
     def cvar_parametric(self, confidence: float = 0.95, horizon: int = 1) -> float:
-        mu    = self._port_returns.mean()
-        sigma = self._port_returns.std(ddof=1)
+        mu    = float(self._port_returns.mean())
+        sigma = float(self._port_returns.std(ddof=1))
         alpha = 1.0 - confidence
-        z     = _norm.ppf(alpha)
-        es    = -(mu - sigma * _norm.pdf(z) / alpha)
-        return float(es * np.sqrt(horizon))
+        z     = float(_norm.ppf(alpha))
+        es    = -(mu - sigma * float(_norm.pdf(z)) / alpha)
+        return es * float(np.sqrt(horizon))
 
-    def full_report(self, confidence: float = 0.95, horizon: int = 1) -> dict:
+    def full_report(
+        self, confidence: float = 0.95, horizon: int = 1
+    ) -> dict[str, Any]:
         return {
             "confidence":      confidence,
             "horizon_days":    horizon,
@@ -122,71 +182,64 @@ class _PyRiskEngine:
         }
 
     # -- PCA -----------------------------------------------------------------
-    def pca(self, n_components: int = -1) -> dict:
-        if n_components < 0 or n_components > self._N:
-            n_components = self._N
+    def pca(self, n_components: int = -1) -> dict[str, Any]:
+        k = self._N if n_components < 0 or n_components > self._N else n_components
 
-        R_c = self._returns - self._returns.mean(axis=0)
-        cov = np.cov(R_c.T)
-
+        R_c                       = self._returns - self._returns.mean(axis=0)
+        cov: np.ndarray           = np.cov(R_c.T)
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
-        # Sort descending
-        order       = np.argsort(eigenvalues)[::-1]
-        eigenvalues = eigenvalues[order]
+
+        order        = np.argsort(eigenvalues)[::-1]
+        eigenvalues  = eigenvalues[order]
         eigenvectors = eigenvectors[:, order]
 
         total_var = float(eigenvalues.sum())
         evr       = eigenvalues / total_var
         cumvar    = np.cumsum(evr)
 
-        evals_k = eigenvalues[:n_components]
-        evecs_k = eigenvectors[:, :n_components]
-
+        evecs_k = eigenvectors[:, :k]
         return {
-            "eigenvalues":              evals_k,
-            "explained_variance_ratio": evr[:n_components],
-            "cumulative_variance":      cumvar[:n_components],
-            "factor_loadings":          evecs_k,           # (N, k)
-            "factor_returns":           R_c @ evecs_k,     # (T, k)
-            "n_components":             n_components,
+            "eigenvalues":              eigenvalues[:k],
+            "explained_variance_ratio": evr[:k],
+            "cumulative_variance":      cumvar[:k],
+            "factor_loadings":          evecs_k,
+            "factor_returns":           R_c @ evecs_k,
+            "n_components":             k,
             "n_assets":                 self._N,
         }
 
     # -- Fama-French ---------------------------------------------------------
     def fama_french(
         self,
-        factors: np.ndarray,          # (T_common, K)
-        rf:      np.ndarray,          # (T_common,) or empty
+        factors: np.ndarray,
+        rf:      np.ndarray,
         names:   list[str],
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         T_common = min(self._T, len(factors))
         K        = factors.shape[1]
         X        = np.column_stack([np.ones(T_common), factors[:T_common]])
-        results  = []
+        results: list[dict[str, Any]] = []
 
         for n in range(self._N):
             rf_vec = rf[:T_common] if len(rf) > 0 else np.zeros(T_common)
             y      = self._returns[:T_common, n] - rf_vec
 
-            coef, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
-            y_hat = X @ coef
-            eps   = y - y_hat
+            coef, *_ = np.linalg.lstsq(X, y, rcond=None)
+            y_hat    = X @ coef
+            eps      = y - y_hat
 
-            ss_res = float((eps**2).sum())
-            ss_tot = float(((y - y.mean())**2).sum())
+            ss_res = float((eps ** 2).sum())
+            ss_tot = float(((y - y.mean()) ** 2).sum())
             r2     = 1.0 - ss_res / ss_tot if ss_tot > 1e-14 else 0.0
 
             systematic = factors[:T_common] @ coef[1:]
-            sys_vol    = float(systematic.std(ddof=1) * np.sqrt(252))
-            idio_vol   = float(eps.std(ddof=1) * np.sqrt(252))
-
             results.append({
                 "asset":          names[n] if n < len(names) else f"Asset_{n}",
                 "alpha":          float(coef[0]),
                 "betas":          coef[1:].astype(np.float64),
-                "r_squared":      float(r2),
-                "systematic_vol": sys_vol,
-                "idio_vol":       idio_vol,
+                "r_squared":      r2,
+                "systematic_vol": float(systematic.std(ddof=1) * np.sqrt(252)),
+                "idio_vol":       float(eps.std(ddof=1) * np.sqrt(252)),
                 "residuals":      eps.astype(np.float64),
             })
 
@@ -200,10 +253,12 @@ class _PyRiskEngine:
         parametric: bool  = False,
     ) -> np.ndarray:
         if window >= self._T:
-            raise ValueError(f"window ({window}) must be less than T ({self._T})")
+            raise ValueError(
+                f"window ({window}) must be strictly less than T ({self._T})"
+            )
         result = np.empty(self._T - window + 1)
         for i in range(window, self._T + 1):
-            sub = _PyRiskEngine(self._returns[i - window:i], self._weights)
+            sub           = _PyRiskEngine(self._returns[i - window:i], self._weights)
             result[i - window] = (
                 sub.var_parametric(confidence) if parametric
                 else sub.var_historical(confidence)
@@ -211,10 +266,17 @@ class _PyRiskEngine:
         return result
 
 
-def _make_engine(returns_arr: np.ndarray, weights_arr: np.ndarray):
-    """Return a C++ or Python risk engine instance."""
-    if _HAS_CPP:
-        return _cpp.RiskEngine(returns_arr, weights_arr)
+# ---------------------------------------------------------------------------
+# Engine factory
+# ---------------------------------------------------------------------------
+
+def _make_engine(
+    returns_arr: np.ndarray,
+    weights_arr: np.ndarray,
+) -> _RiskEngineProtocol:
+    """Return the C++ engine when compiled, otherwise the Python fallback."""
+    if _HAS_CPP and _cpp_module is not None:
+        return _cpp_module.RiskEngine(returns_arr, weights_arr)  # type: ignore[no-any-return]
     return _PyRiskEngine(returns_arr, weights_arr)
 
 
@@ -242,12 +304,12 @@ class Portfolio:
         weights: Optional[np.ndarray] = None,
         name:    str = "Portfolio",
     ) -> None:
-        self.returns = returns.astype(float)
-        self.name    = name
-        n            = returns.shape[1]
+        self.returns: pd.DataFrame = returns.astype(float)
+        self.name:    str          = name
+        n = returns.shape[1]
 
         if weights is None:
-            self.weights = np.ones(n) / n
+            self.weights: np.ndarray = np.ones(n) / n
         else:
             self.weights = np.asarray(weights, dtype=float)
 
@@ -260,7 +322,7 @@ class Portfolio:
                 f"weights length {len(self.weights)} != n_assets {n}"
             )
 
-        self._engine = _make_engine(
+        self._engine: _RiskEngineProtocol = _make_engine(
             returns.values.astype(np.float64),
             self.weights.astype(np.float64),
         )
@@ -366,8 +428,8 @@ class Portfolio:
         )
         f_cols = [c for c in factors.columns if c != rf_col]
 
-        F  = factors.loc[common, f_cols].values.astype(np.float64)
-        rf = (
+        F: np.ndarray  = factors.loc[common, f_cols].values.astype(np.float64)
+        rf: np.ndarray = (
             factors.loc[common, rf_col].values.astype(np.float64)
             if rf_col else np.zeros(len(common))
         )
@@ -396,7 +458,9 @@ class Portfolio:
         return pd.Series(arr, index=idx, name=f"Rolling VaR ({tag})")
 
     # -- Stress test ---------------------------------------------------------
-    def stress_test(self, scenarios: dict[str, dict[str, float]]) -> pd.DataFrame:
+    def stress_test(
+        self, scenarios: dict[str, dict[str, float]]
+    ) -> pd.DataFrame:
         """
         Apply named shock scenarios and compute portfolio P&L.
 
@@ -409,7 +473,7 @@ class Portfolio:
         -------
         pd.DataFrame with a single column 'P&L (%)'.
         """
-        rows = {}
+        rows: dict[str, dict[str, float]] = {}
         for scenario_name, shocks in scenarios.items():
             pnl = sum(
                 self.weights[self.assets.index(a)] * shock
@@ -421,10 +485,11 @@ class Portfolio:
 
     def __repr__(self) -> str:
         pr = self.portfolio_returns
+        ann_ret = float(pr.mean()) * 252 * 100
+        ann_vol = float(pr.std())  * float(np.sqrt(252)) * 100
         return (
             f"Portfolio('{self.name}' | T={self.T}, N={self.N} | "
-            f"ann_ret={pr.mean()*252*100:.2f}%, "
-            f"ann_vol={pr.std()*np.sqrt(252)*100:.2f}%)"
+            f"ann_ret={ann_ret:.2f}%, ann_vol={ann_vol:.2f}%)"
         )
 
 
@@ -450,16 +515,17 @@ class RiskReport:
         bar = "-" * 52
         return (
             f"\n{bar}\n"
-            f"  {self.portfolio_name}  |  {self.confidence*100:.0f}%  |  {self.horizon_days}d\n"
+            f"  {self.portfolio_name}  |  "
+            f"{self.confidence * 100:.0f}%  |  {self.horizon_days}d\n"
             f"{bar}\n"
-            f"  Ann. Vol             {self.portfolio_vol*100:>10.2f} %\n"
-            f"  Ann. Return          {self.portfolio_mean*100:>10.2f} %\n"
+            f"  Ann. Vol             {self.portfolio_vol * 100:>10.2f} %\n"
+            f"  Ann. Return          {self.portfolio_mean * 100:>10.2f} %\n"
             f"  Observations         {self.n_obs:>10d}\n"
             f"{bar}\n"
-            f"  VaR  Historical      {self.var_historical*100:>10.4f} %\n"
-            f"  VaR  Parametric      {self.var_parametric*100:>10.4f} %\n"
-            f"  CVaR Historical      {self.cvar_historical*100:>10.4f} %\n"
-            f"  CVaR Parametric      {self.cvar_parametric*100:>10.4f} %\n"
+            f"  VaR  Historical      {self.var_historical * 100:>10.4f} %\n"
+            f"  VaR  Parametric      {self.var_parametric * 100:>10.4f} %\n"
+            f"  CVaR Historical      {self.cvar_historical * 100:>10.4f} %\n"
+            f"  CVaR Parametric      {self.cvar_parametric * 100:>10.4f} %\n"
             f"{bar}"
         )
 
@@ -478,10 +544,10 @@ class PCAResult:
         """Return a DataFrame summarising explained variance per component."""
         k = len(self.eigenvalues)
         return pd.DataFrame({
-            "Component"           : [f"PC{i+1}" for i in range(k)],
-            "Eigenvalue"          : self.eigenvalues.round(6),
-            "Explained Var (%)"   : (self.explained_variance_ratio * 100).round(2),
-            "Cumulative Var (%)"  : (self.cumulative_variance * 100).round(2),
+            "Component"          : [f"PC{i + 1}" for i in range(k)],
+            "Eigenvalue"         : self.eigenvalues.round(6),
+            "Explained Var (%)"  : (self.explained_variance_ratio * 100).round(2),
+            "Cumulative Var (%)" : (self.cumulative_variance * 100).round(2),
         })
 
     def n_factors_for(self, threshold: float = 0.90) -> int:
@@ -492,7 +558,7 @@ class PCAResult:
 @dataclass
 class FFResult:
     """Fama-French k-factor regression result."""
-    raw          : list        # raw dicts from the engine
+    raw          : list[dict[str, Any]]
     factor_names : list[str]
     asset_names  : list[str]
 
@@ -510,11 +576,11 @@ class FFResult:
         """Return a DataFrame with alpha, R2, betas, systematic and idio vol."""
         rows = []
         for r in self.raw:
-            row = {
+            row: dict[str, float] = {
                 "Alpha ann. (%)": round(r["alpha"] * 252 * 100, 4),
-                "R2"             : round(r["r_squared"], 4),
+                "R2"             : round(r["r_squared"],          4),
                 "Sys. Vol (%)"   : round(r["systematic_vol"] * 100, 4),
-                "Idio. Vol (%)"  : round(r["idio_vol"] * 100, 4),
+                "Idio. Vol (%)"  : round(r["idio_vol"] * 100,     4),
             }
             for i, fname in enumerate(self.factor_names):
                 row[f"beta_{fname}"] = round(float(r["betas"][i]), 4)
@@ -542,10 +608,10 @@ def synthetic_portfolio(
     Generate correlated log-returns for offline testing.
 
     Returns a DataFrame of shape (n_days, n_assets) with a business-day
-    DatetimeIndex starting at `start`.
+    DatetimeIndex starting at ``start``.
     """
     rng     = np.random.default_rng(seed)
-    tickers = [f"ASSET_{i+1}" for i in range(n_assets)]
+    tickers = [f"ASSET_{i + 1}" for i in range(n_assets)]
 
     # Random positive-definite covariance matrix
     A   = rng.standard_normal((n_assets, n_assets))
@@ -567,19 +633,22 @@ def synthetic_ff_factors(
     """Synthetic Fama-French 3 factors for unit testing."""
     rng = np.random.default_rng(seed)
     T   = len(index)
-    return pd.DataFrame({
-        "Mkt-RF": rng.normal(3e-4, 0.010, T),
-        "SMB"   : rng.normal(1e-4, 0.005, T),
-        "HML"   : rng.normal(1e-4, 0.005, T),
-        "RF"    : np.full(T, 1.5e-4),
-    }, index=index)
+    return pd.DataFrame(
+        {
+            "Mkt-RF": rng.normal(3e-4, 0.010, T),
+            "SMB"   : rng.normal(1e-4, 0.005, T),
+            "HML"   : rng.normal(1e-4, 0.005, T),
+            "RF"    : np.full(T, 1.5e-4),
+        },
+        index=index,
+    )
 
 
 def load_fama_french(start: str, end: str) -> pd.DataFrame:
     """
     Download daily Fama-French 3-factor data from Kenneth French's website.
 
-    Results are cached locally at data/ff3_daily.parquet.
+    Results are cached locally at ``data/ff3_daily.parquet``.
     Requires an internet connection on the first call.
     """
     cache = CACHE_DIR / "ff3_daily.parquet"
@@ -593,9 +662,11 @@ def load_fama_french(start: str, end: str) -> pd.DataFrame:
 
     with zipfile.ZipFile(io.BytesIO(content)) as zf:
         csv_name = next(n for n in zf.namelist() if n.upper().endswith(".CSV"))
-        raw      = zf.open(csv_name).read().decode("latin-1")
+        raw_text = zf.open(csv_name).read().decode("latin-1")
 
-    lines, in_data, data_lines = raw.split("\n"), False, []
+    lines:      list[str] = raw_text.split("\n")
+    in_data:    bool      = False
+    data_lines: list[str] = []
     for line in lines:
         s = line.strip()
         if not s:
