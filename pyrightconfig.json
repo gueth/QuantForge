@@ -1,0 +1,20 @@
+{
+  "pythonVersion": "3.12",
+  "venvPath": ".",
+  "venv": ".venv",
+  "typeCheckingMode": "basic",
+
+  "extraPaths": [
+    "01_pricing_engine/src",
+    "02_risk_engine/src",
+    "03_alpha_strategy/src",
+    "04_execution_sim/src"
+  ],
+
+  "reportMissingModuleSource": "none",
+
+  "ignore": [
+    "**/notebooks/**",
+    "**/__pycache__/**"
+  ]
+}
