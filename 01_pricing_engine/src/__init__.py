@@ -1,3 +1,5 @@
+__version__ = "0.1.0"
+
 from .black_scholes import (
     bs_call_price,
     bs_put_price,

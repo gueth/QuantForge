@@ -4,6 +4,18 @@
 
 Optimal order execution engine based on the Almgren-Chriss (2001) framework. Computes optimal trading trajectories and estimates the implementation shortfall (IS) distribution via Monte Carlo simulation.
 
+## Preview
+
+| Execution schedules | IS distribution |
+|:---:|:---:|
+| ![Schedule dashboard](outputs/schedule_dashboard.png) | ![IS dashboard](outputs/is_dashboard.png) |
+
+| Efficient frontier |
+|:---:|
+| ![Efficient frontier](outputs/efficient_frontier.png) |
+
+> Run `python 04_execution_sim/src/main.py` to generate these charts.
+
 ## Contents
 
 | File | Description |

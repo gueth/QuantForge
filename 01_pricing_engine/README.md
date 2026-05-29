@@ -4,6 +4,14 @@
 
 Closed-form and Monte Carlo pricing of vanilla and exotic options, with a high-performance C++ backend for path simulation.
 
+## Preview
+
+| Pricing & Greeks | Monte Carlo |
+|:---:|:---:|
+| ![Pricing dashboard](outputs/pricing_dashboard.png) | ![MC dashboard](outputs/mc_dashboard.png) |
+
+> Run `python 01_pricing_engine/src/main.py` to generate these charts.
+
 ## Contents
 
 | File | Description |

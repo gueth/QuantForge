@@ -4,6 +4,18 @@
 
 Portfolio risk analytics engine with a from-scratch C++ numerical backend: VaR, CVaR, PCA, Fama-French 3-factor regression, rolling VaR and stress testing.
 
+## Preview
+
+| VaR / CVaR | PCA |
+|:---:|:---:|
+| ![VaR dashboard](outputs/var_dashboard.png) | ![PCA dashboard](outputs/pca_dashboard.png) |
+
+| Fama-French | Rolling VaR |
+|:---:|:---:|
+| ![FF dashboard](outputs/ff_dashboard.png) | ![Rolling VaR](outputs/rolling_var.png) |
+
+> Run `python 02_risk_engine/src/main.py` to generate these charts.
+
 ## Contents
 
 | File | Description |

@@ -1,3 +1,5 @@
+__version__ = "0.1.0"
+
 from .schedules import (
     twap,
     vwap,

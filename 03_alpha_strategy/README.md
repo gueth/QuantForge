@@ -4,6 +4,18 @@
 
 Statistical arbitrage and alpha signal generation pipeline: Kalman filter pairs trading, cross-sectional momentum, vectorized backtesting, and purged cross-validation to avoid look-ahead bias.
 
+## Preview
+
+| Signal (Kalman pairs) | Performance |
+|:---:|:---:|
+| ![Signal dashboard](outputs/signal_dashboard.png) | ![Performance dashboard](outputs/performance_dashboard.png) |
+
+| Strategy comparison | Walk-forward |
+|:---:|:---:|
+| ![Comparison](outputs/comparison_dashboard.png) | ![Walk-forward](outputs/walkforward_dashboard.png) |
+
+> Run `python 03_alpha_strategy/src/main.py` to generate these charts.
+
 ## Contents
 
 | File | Description |

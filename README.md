@@ -5,7 +5,7 @@
 [![Language](https://img.shields.io/badge/C%2B%2B-17-blue)](https://isocpp.org/)
 [![Language](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![CI](https://github.com/bayih/QuantForge/actions/workflows/ci.yml/badge.svg)](https://github.com/bayih/QuantForge/actions)
+[![CI](https://github.com/gueth/QuantForge/actions/workflows/ci.yml/badge.svg)](https://github.com/gueth/QuantForge/actions)
 
 QuantForge is an end-to-end quantitative trading system built from scratch, covering the full pipeline of a quantitative desk: **derivative pricing → risk analytics → alpha generation → optimal execution**.
 
