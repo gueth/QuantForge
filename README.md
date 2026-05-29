@@ -1,13 +1,14 @@
 # QuantForge
-### A Full-Stack Quantitative Trading System — from Stochastic Pricing to Execution
+
+### A Full-Stack Quantitative Trading System — from Stochastic Pricing to Optimal Execution
 
 [![Language](https://img.shields.io/badge/C%2B%2B-17-blue)](https://isocpp.org/)
 [![Language](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-QuantForge is an end-to-end quantitative trading system built from scratch, covering the full production pipeline of a quant desk: **derivative pricing → risk management → alpha generation → optimal execution**.
+QuantForge is an end-to-end quantitative trading system built from scratch, covering the full pipeline of a quantitative desk: **derivative pricing → risk analytics → alpha generation → optimal execution**.
 
-Each module is self-contained and production-inspired, combining rigorous mathematics with high-performance C++ and Python.
+Each module is self-contained and production-inspired: rigorous mathematics, high-performance C++17 backends compiled via pybind11, comprehensive Python APIs, publication-quality visualizations, and pytest test suites.
 
 ---
 
@@ -15,108 +16,165 @@ Each module is self-contained and production-inspired, combining rigorous mathem
 
 ```
 QuantForge/
-├── 01_pricing_engine/     # C++17 Monte Carlo pricer + Python bindings
-├── 02_risk_engine/        # Portfolio risk: VaR, CVaR, PCA factor model
-├── 03_alpha_strategy/     # Stat-arb: Kalman filter, purged CV backtesting
-├── 04_execution_sim/      # Almgren-Chriss optimal execution simulator
-├── notebooks/             # Analysis, visualizations, results
-└── README.md
+├── 01_pricing_engine/   ─── Black-Scholes · Monte Carlo · Barrier options
+├── 02_risk_engine/      ─── VaR · CVaR · PCA · Fama-French · Rolling VaR
+├── 03_alpha_strategy/   ─── Kalman pairs trading · Momentum · Purged CV
+└── 04_execution_sim/    ─── Almgren-Chriss · TWAP/VWAP · IS Monte Carlo
 ```
 
 ---
 
 ## Modules
 
-### Module 1 — Derivative Pricing Engine ✅
-> *Stochastic calculus · Monte Carlo · Black-Scholes · Greeks · C++17 · pybind11*
+### Module 1 — Pricing Engine
 
-A high-performance options pricing engine implementing both analytical (Black-Scholes) and numerical (Monte Carlo) methods, with a C++ backend exposed to Python via pybind11.
+| Component | Details |
+|-----------|---------|
+| **BS pricing** | Closed-form call/put + full Greeks (Δ, Γ, ν, Θ, ρ) |
+| **Implied vol** | Bisection solver, tolerance $10^{-6}$ |
+| **Monte Carlo** | GBM simulation, antithetic variates, up-and-out barrier |
+| **C++ backend** | 6× speedup vs NumPy for 100k-path simulation |
 
-**Key results:**
+```
+src/black_scholes.py   src/monte_carlo.py   src/visualizer.py   src/main.py
+cpp/mc_bindings.cpp
+tests/test_pricing_engine.py   (30+ tests)
+```
 
-| Method | Price (S₀=100, K=100, σ=0.2, r=5%, T=1y) | Latency |
-|---|---|---|
-| Black-Scholes analytical | 10.4506 | < 1ms |
-| Monte Carlo (Python) | ~10.45 | 1710ms |
-| Monte Carlo (C++, -O2) | ~10.45 | **4.9ms** |
+### Module 2 — Risk Engine
 
-The C++ engine is **348x faster** than the pure Python implementation.
+| Component | Details |
+|-----------|---------|
+| **VaR / CVaR** | Historical and parametric, square-root-of-time scaling |
+| **PCA** | Jacobi eigensolver (from scratch), factor loadings & returns |
+| **Fama-French** | 3-factor OLS regression, $\alpha$, $\beta$, $R^2$, systematic/idio vol |
+| **Rolling VaR** | Sliding-window risk, configurable window and confidence |
+| **Stress testing** | Named scenario P&L attribution |
+| **C++ backend** | 3× speedup on VaR/CVaR; from-scratch Gauss-Jordan OLS |
 
-→ [See Module 1 documentation](01_pricing_engine/README.md)
+```
+src/portfolio.py   src/visualizer.py   src/main.py
+include/linalg.hpp   include/risk_engine.hpp   include/risk_types.hpp
+cpp/bindings.cpp
+tests/test_risk_engine.py   (44 tests)
+```
+
+### Module 3 — Alpha Strategy
+
+| Component | Details |
+|-----------|---------|
+| **Kalman pairs** | Dynamic hedge ratio $\beta_t$ via scalar Kalman filter |
+| **CS momentum** | Long top-$q$, short bottom-$q$ quartile, dollar-neutral |
+| **Z-score MR** | Rolling z-score mean-reversion signal |
+| **Backtest** | Vectorized engine, transaction costs, 9 performance metrics |
+| **Purged K-Fold** | Anti-leakage CV (Lopez de Prado 2018) |
+| **Walk-forward** | Expanding/rolling window OOS evaluation |
+| **C++ backend** | Fast Kalman filter and performance metrics computation |
+
+```
+src/signals.py   src/backtest.py   src/validation.py
+src/visualizer.py   src/main.py
+include/kalman.hpp   include/alpha_types.hpp
+cpp/kalman_bindings.cpp
+tests/test_alpha_strategy.py   (40+ tests)
+```
+
+### Module 4 — Execution Simulator
+
+| Component | Details |
+|-----------|---------|
+| **Almgren-Chriss** | Optimal trajectory: $x_k = X\sinh(\kappa(N-k)\tau)/\sinh(\kappa N\tau)$ |
+| **TWAP** | Uniform $n_k = X/N$ schedule |
+| **VWAP** | U-shaped intraday volume-profile participation |
+| **MC simulation** | Permanent + temporary impact + Brownian timing risk |
+| **IS decomposition** | Perm. impact, temp. impact, timing risk |
+| **Efficient frontier** | $(\mathbb{E}[\text{IS}], \sigma[\text{IS}])$ curve as $\lambda$ varies |
+| **C++ backend** | Fast Monte Carlo IS simulation |
+
+```
+src/schedules.py   src/simulator.py   src/visualizer.py   src/main.py
+include/almgren_chriss.hpp   include/exec_types.hpp
+cpp/exec_bindings.cpp
+tests/test_execution_sim.py   (30+ tests)
+```
 
 ---
 
-### Module 2 — Risk Engine 🔄
-> *Portfolio VaR · CVaR · PCA · Fama-French factor model*
+## Uniform Module Structure
 
-*In progress*
+Every module follows the same layout:
+
+```
+0X_module_name/
+├── README.md          # Module documentation with mathematical background
+├── setup.py           # pybind11 C++ extension build script
+├── include/           # C++ headers (header-only, no external dependencies)
+├── src/               # Python source (module.py, visualizer.py, main.py)
+├── cpp/               # C++ source and pybind11 bindings
+└── tests/             # pytest unit tests
+```
 
 ---
 
-### Module 3 — Alpha Strategy 🔄
-> *Statistical arbitrage · Kalman filter · Purged cross-validation*
+## Quick Start
 
-*In progress*
+```bash
+# 1. Install Python dependencies
+pip install -r requirements.txt
+
+# 2. (Optional) Compile C++ extensions for each module
+cd 01_pricing_engine && python setup.py build_ext --inplace && cd ..
+cd 02_risk_engine     && python setup.py build_ext --inplace && cd ..
+cd 03_alpha_strategy  && python setup.py build_ext --inplace && cd ..
+cd 04_execution_sim   && python setup.py build_ext --inplace && cd ..
+
+# 3. Run any module demo
+cd 01_pricing_engine/src && python main.py
+cd 02_risk_engine/src    && python main.py
+cd 03_alpha_strategy/src && python main.py
+cd 04_execution_sim/src  && python main.py
+```
+
+All modules fall back to pure NumPy when the C++ extension is not compiled.
 
 ---
 
-### Module 4 — Execution Simulator 🔄
-> *Almgren-Chriss model · Market impact · Optimal execution · C++*
+## Run All Tests
 
-*In progress*
-
----
-
-## Mathematical Foundation
-
-The system is built on the following mathematical pillars.
-
-**Stochastic Calculus** — Geometric Brownian Motion under the risk-neutral measure $`\mathbb{Q}`$:
-
-```math
-S_T = S_0 \exp\left[\left(r - \frac{\sigma^2}{2}\right)T + \sigma W_T\right], \quad W_T \sim \mathcal{N}(0, T)
+```bash
+# From each module directory:
+python -m pytest 01_pricing_engine/tests/ -v
+python -m pytest 02_risk_engine/tests/    -v
+python -m pytest 03_alpha_strategy/tests/ -v
+python -m pytest 04_execution_sim/tests/  -v
 ```
 
-**Black-Scholes Formula** — closed-form European call price:
-
-```math
-C_0 = S_0\,\Phi(d_1) - Ke^{-rT}\Phi(d_2)
-```
-
-```math
-d_1 = \frac{\ln(S_0/K) + (r + \sigma^2/2)\,T}{\sigma\sqrt{T}}, \qquad d_2 = d_1 - \sigma\sqrt{T}
-```
-
-**Monte Carlo Pricing** — law of large numbers applied to risk-neutral expectation:
-
-```math
-C_0 = e^{-rT}\,\mathbb{E}^{\mathbb{Q}}\!\left[\max(S_T - K,\, 0)\right] \approx \frac{e^{-rT}}{N}\sum_{i=1}^{N}\max\!\left(S_T^{(i)} - K,\, 0\right)
-```
+Total: **150+ unit tests** covering mathematical invariants, edge cases, and performance contracts.
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|---|---|
-| High-performance core | C++17, g++ with -O2 |
-| Python interface | pybind11, NumPy, SciPy |
-| Analysis & visualization | Jupyter, Matplotlib |
-| Version control | Git / GitLab |
+|-------|-----------|
+| Numerical core | C++17 (header-only, zero external C++ deps) |
+| Python binding | pybind11 |
+| Data/analysis | NumPy · SciPy · pandas |
+| Visualisation | Matplotlib (dark-theme, publication-ready) |
+| Testing | pytest |
+| Build | setuptools + Extension |
 
 ---
 
-## References
+## Mathematical Foundations
 
-- Black, F. & Scholes, M. (1973). *The Pricing of Options and Corporate Liabilities*
-- Glasserman, P. (2003). *Monte Carlo Methods in Financial Engineering*
-- López de Prado, M. (2018). *Advances in Financial Machine Learning*
-- Almgren, R. & Chriss, N. (2001). *Optimal Execution of Portfolio Transactions*
-- Cartea, Á., Jaimungal, S. & Penalva, J. (2015). *Algorithmic and High-Frequency Trading*
-
----
-
-## Author
-
-**gueth** — Quantitative Developer  
-Built as a self-directed deep dive into quantitative finance, numerical methods, and high-performance computing.
+| Topic | Module | Key references |
+|-------|--------|----------------|
+| Black-Scholes PDE | 1 | Black & Scholes (1973), Merton (1973) |
+| Monte Carlo methods | 1 | Glasserman (2003) *Monte Carlo Methods in Financial Engineering* |
+| Value at Risk | 2 | Basel Committee on Banking Supervision (2019) |
+| PCA / Factor models | 2 | Jolliffe (2002) *Principal Component Analysis* |
+| Fama-French factors | 2 | Fama & French (1993) |
+| Kalman filter | 3 | Kalman (1960), Avellaneda & Lee (2010) |
+| Purged CV | 3 | Lopez de Prado (2018) *Advances in Financial ML* |
+| Almgren-Chriss | 4 | Almgren & Chriss (2001) *Optimal Execution of Portfolio Transactions* |

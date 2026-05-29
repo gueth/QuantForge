@@ -1,3 +1,20 @@
-numpy
-scipy
-pybind11
+# QuantForge — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Core numerical
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0
+
+# C++ extension build
+pybind11>=2.11
+
+# Visualisation
+matplotlib>=3.7
+
+# Data (Module 2 — real market data, optional)
+yfinance>=0.2
+pyarrow>=12.0       # parquet support for Fama-French factor cache
+
+# Testing
+pytest>=7.4

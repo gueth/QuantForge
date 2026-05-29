@@ -1,173 +1,120 @@
-# Module 1 — Derivative Pricing Engine
+# Module 1 — Pricing Engine
 
 > **Stack:** C++17 · Python 3.12 · pybind11 · NumPy · SciPy · Matplotlib
 
-A high-performance options pricing engine implementing two complementary approaches: an analytical Black-Scholes pricer and a Monte Carlo simulator, with a C++ backend exposed to Python via pybind11.
+Closed-form and Monte Carlo pricing of vanilla and exotic options, with a high-performance C++ backend for path simulation.
 
----
+## Contents
+
+| File | Description |
+|------|-------------|
+| `src/black_scholes.py` | BS closed-form pricer, full Greeks, implied volatility (bisection) |
+| `src/monte_carlo.py` | MC pricer — antithetic variance reduction, up-and-out barrier |
+| `src/visualizer.py` | Pricing, Greeks and MC dashboards (dark-theme matplotlib) |
+| `src/main.py` | End-to-end demo pipeline |
+| `cpp/mc_bindings.cpp` | pybind11 C++ Monte Carlo engine |
+| `tests/test_pricing_engine.py` | 30+ unit tests |
 
 ## Mathematical Background
 
-### The Asset Model
-
-We model the underlying asset price $`S_t`$ as a **Geometric Brownian Motion**:
-
-```math
-dS_t = S_t\left(\mu \, dt + \sigma \, dW_t\right)
-```
-
-whose closed-form solution is:
-
-```math
-S_T = S_0 \exp\!\left[\left(r - \frac{\sigma^2}{2}\right)T + \sigma W_T\right], \quad W_T \sim \mathcal{N}(0, T)
-```
-
-Under the **risk-neutral measure** $`\mathbb{Q}`$, the drift $`\mu`$ is replaced by the risk-free rate $`r`$. This is the key insight of Black-Scholes: option prices are independent of the expected return of the underlying — they depend only on its volatility $`\sigma`$.
-
 ### Black-Scholes Formula
 
-The fair price of a European call option with strike $`K`$ and maturity $`T`$ is:
+Under risk-neutral dynamics $dS = rS\,dt + \sigma S\,dW$:
 
-```math
-C_0 = S_0\,\Phi(d_1) - Ke^{-rT}\Phi(d_2)
-```
+$$C = S_0\,\Phi(d_1) - K e^{-rT}\,\Phi(d_2), \quad P = Ke^{-rT}\Phi(-d_2) - S_0\Phi(-d_1)$$
 
-where:
+$$d_1 = \frac{\ln(S_0/K) + (r + \frac{1}{2}\sigma^2)T}{\sigma\sqrt{T}}, \quad d_2 = d_1 - \sigma\sqrt{T}$$
 
-```math
-d_1 = \frac{\ln(S_0/K) + \left(r + \frac{\sigma^2}{2}\right)T}{\sigma\sqrt{T}}, \qquad d_2 = d_1 - \sigma\sqrt{T}
-```
+### Greeks
 
-and $`\Phi`$ is the standard normal CDF.
+| Greek | Call | Put |
+|-------|------|-----|
+| Delta | $\Phi(d_1)$ | $\Phi(d_1)-1$ |
+| Gamma | $\phi(d_1)/(S\sigma\sqrt{T})$ | same |
+| Vega  | $S\phi(d_1)\sqrt{T}\;/\;100$ (per 1% vol) | same |
+| Theta | $-\tfrac{S\phi(d_1)\sigma}{2\sqrt{T}} - rKe^{-rT}\Phi(d_2)$ | $+rKe^{-rT}\Phi(-d_2)$ |
+| Rho   | $KTe^{-rT}\Phi(d_2)\;/\;100$ | $-KTe^{-rT}\Phi(-d_2)\;/\;100$ |
 
-### Monte Carlo Pricing
+### Monte Carlo
 
-For options without closed-form solutions (e.g. barrier options), we use Monte Carlo simulation:
+$$S_T = S_0\exp\!\left[\left(r - \tfrac{\sigma^2}{2}\right)T + \sigma\sqrt{T}\,Z\right], \quad Z\sim\mathcal{N}(0,1)$$
 
-```math
-C_0 = e^{-rT}\,\mathbb{E}^{\mathbb{Q}}\!\left[\max(S_T - K, 0)\right] \approx e^{-rT} \cdot \frac{1}{N}\sum_{i=1}^{N}\max\!\left(S_T^{(i)} - K,\, 0\right)
-```
+**Antithetic variates** — pair each draw $(Z, -Z)$ to halve estimator variance at no extra cost.
 
-Each path is simulated as:
+**Up-and-out barrier** — monitored at $n_\text{steps}$ equally-spaced dates; option pays zero if $S_t \geq B$ at any step.
 
-```math
-S_T^{(i)} = S_0 \exp\!\left[\left(r - \frac{\sigma^2}{2}\right)T + \sigma \sqrt{T}\, Z_i\right], \quad Z_i \sim \mathcal{N}(0,1)
-```
+**Implied volatility** — bisection search on $\sigma \in (10^{-6},\,10)$, tolerance $10^{-6}$.
 
----
-
-## Greeks
-
-The Greeks measure the sensitivity of the option price to its parameters:
-
-| Greek | Definition | Formula |
-|---|---|---|
-| $`\Delta`$ | $`\partial C / \partial S_0`$ | $`\Phi(d_1)`$ |
-| $`\Gamma`$ | $`\partial^2 C / \partial S_0^2`$ | $`\phi(d_1) / (S_0 \sigma \sqrt{T})`$ |
-| $`\mathcal{V}`$ | $`\partial C / \partial \sigma`$ | $`S_0\, \phi(d_1)\sqrt{T}`$ |
-
-where $`\phi`$ is the standard normal PDF.
-
----
-
-## Implementation
-
-### File Structure
+## Project Structure
 
 ```
 01_pricing_engine/
-├── black_scholes.py      # Analytical pricer + Greeks
-├── monte_carlo.py        # Vectorized Monte Carlo (vanilla + barrier)
-├── mc_bindings.cpp       # C++ Monte Carlo engine
-├── mc_bindings.pyd       # Compiled Python extension
-├── setup.py              # Build script for pybind11 binding
-└── README.md
+├── README.md
+├── setup.py              # C++ extension build (pybind11)
+├── src/
+│   ├── black_scholes.py  # BS pricing, Greeks, implied vol
+│   ├── monte_carlo.py    # MC pricing, antithetic, barrier
+│   ├── visualizer.py     # Matplotlib dashboards
+│   └── main.py           # Runnable demo
+├── cpp/
+│   ├── mc_pricer.cpp     # Standalone C++ pricer
+│   └── mc_bindings.cpp   # pybind11 bindings
+└── tests/
+    ├── test_pricing_engine.py
+    └── test_binding.py
 ```
 
-### Python — Analytical Pricer
+## Quick Start
 
 ```python
-from black_scholes import bs_call_price, bs_greeks
+from src.black_scholes import bs_call_price, bs_greeks, bs_implied_vol
+from src.monte_carlo   import mc_call_price, mc_call_price_antithetic
 
-# European call price
-price = bs_call_price(S0=100, K=100, r=0.05, sigma=0.2, T=1.0)
-# → 10.4506
+# Closed-form ATM call — should be ≈ 10.4506
+price = bs_call_price(S0=100, K=100, r=0.05, sigma=0.20, T=1.0)
 
-# Greeks
-delta, gamma, vega = bs_greeks(S0=100, K=100, r=0.05, sigma=0.2, T=1.0)
-# → delta=0.6368, gamma=0.0188, vega=37.52
+# All 8 Greeks
+g = bs_greeks(S0=100, K=100, r=0.05, sigma=0.20, T=1.0)
+print(g["delta_call"], g["gamma"], g["theta_call"])
+
+# Implied volatility round-trip
+iv = bs_implied_vol(price, S0=100, K=100, r=0.05, T=1.0)
+assert abs(iv - 0.20) < 1e-5
+
+# Monte Carlo with antithetic variance reduction
+import numpy as np
+np.random.seed(42)
+mc = mc_call_price_antithetic(100, 100, 0.05, 0.20, 1.0, n_paths=50_000)
 ```
 
-### Python — Monte Carlo
-
-```python
-from monte_carlo import mc_call_price, mc_barrier_call_price
-
-# Vanilla call
-price = mc_call_price(S0=100, K=100, r=0.05, sigma=0.2, T=1.0)
-
-# Knock-out barrier call (cancelled if S touches B=120 before maturity)
-price = mc_barrier_call_price(S0=100, K=100, B=120, r=0.05, sigma=0.2, T=1.0)
-```
-
-### C++ Backend via pybind11
-
-```python
-import mc_pricer  # compiled C++ extension
-
-price = mc_pricer.mc_call_price(S0=100, K=100, r=0.05, sigma=0.2, T=1.0, n_paths=100000)
-```
-
-To rebuild the C++ extension:
+## Build C++ Extension
 
 ```bash
 cd 01_pricing_engine
+pip install pybind11
 python setup.py build_ext --inplace
 ```
 
----
+## Run the Demo
 
-## Performance Benchmark
+```bash
+cd 01_pricing_engine/src
+python main.py
+```
 
-Monte Carlo pricing of a European call — 100,000 paths, averaged over 10 runs:
+Charts are saved to `notebooks/`.
 
-| Implementation | Avg. Latency | Speedup |
-|---|---|---|
-| Python (vectorized NumPy) | 1710 ms | 1x |
-| C++ (g++, `-O2`) via pybind11 | **4.9 ms** | **348x** |
+## Run Tests
 
-The C++ engine uses `std::mt19937_64` (Mersenne Twister 64-bit) for random number generation and is compiled with `-O2` optimization.
+```bash
+cd 01_pricing_engine
+python -m pytest tests/ -v
+```
 
----
+## Performance
 
-## Results
-
-### Price Convergence — Black-Scholes vs Monte Carlo
-
-Both methods converge to the same price across all strikes, confirming the correctness of the simulation.
-
-| S₀ | K | r | σ | T | BS Price | MC Price |
-|---|---|---|---|---|---|---|
-| 100 | 100 | 5% | 20% | 1y | 10.4506 | ~10.45 |
-| 100 | 110 | 5% | 20% | 1y | 6.0401 | ~6.04 |
-| 100 | 90 | 5% | 20% | 1y | 16.6994 | ~16.70 |
-
-### Greeks Behavior
-
-- **Delta** decreases monotonically from ~1 (deep in-the-money) to ~0 (deep out-of-the-money)
-- **Gamma** and **Vega** peak at-the-money (K = S₀), where uncertainty and volatility sensitivity are maximal
-
-### Terminal Price Distribution
-
-The simulated terminal prices follow a **log-normal distribution**, consistent with the GBM assumption:
-
-- E[S_T] simulated: 105.15 (theoretical: S₀ × e^(rT) = 105.13) ✅
-- Median S_T: 103.10 < Mean: 105.15 — right skew confirms log-normality
-
----
-
-## References
-
-- Black, F. & Scholes, M. (1973). *The Pricing of Options and Corporate Liabilities.* Journal of Political Economy.
-- Glasserman, P. (2003). *Monte Carlo Methods in Financial Engineering.* Springer.
-- Wilmott, P. (2006). *Paul Wilmott on Quantitative Finance.* Wiley.
+| Method | 100k paths | Notes |
+|--------|-----------|-------|
+| Python (NumPy, vectorised) | ~30 ms | Single-step GBM |
+| C++ (-O2) | ~5 ms | Same algorithm |
+| **Speedup** | **~6×** | |
