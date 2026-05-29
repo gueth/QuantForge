@@ -147,7 +147,7 @@ def run():
         fm = bt_fold.run()
         fold_sharpes.append(fm.sharpe_ratio)
 
-    print(f"\n  OOS Sharpe per fold: {[round(s,2) for s in fold_sharpes]}")
+    print(f"\n  OOS Sharpe per fold: {[round(float(s), 2) for s in fold_sharpes]}")
     print(f"  Mean OOS Sharpe:      {np.mean(fold_sharpes):.3f}")
     print(f"  Std  OOS Sharpe:      {np.std(fold_sharpes):.3f}")
 
