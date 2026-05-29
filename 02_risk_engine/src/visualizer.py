@@ -12,6 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.figure import Figure
 from scipy import stats
 from pathlib import Path
 
@@ -60,7 +61,7 @@ def _apply_style() -> None:
 _apply_style()
 
 
-def _fig(w: int = 16, h: int = 10) -> plt.Figure:
+def _fig(w: int = 16, h: int = 10) -> Figure:
     fig = plt.figure(figsize=(w, h))
     fig.patch.set_facecolor(C["bg"])
     return fig
@@ -75,7 +76,7 @@ def plot_var_dashboard(
     report:    RiskReport,
     save:      bool = True,
     fname:     str  = "var_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4-panel VaR/CVaR dashboard:
       A - Return distribution with VaR/CVaR markers
@@ -187,7 +188,7 @@ def plot_pca_dashboard(
     n_show:    int  = 5,
     save:      bool = True,
     fname:     str  = "pca_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4-panel PCA dashboard:
       A - Scree plot (explained + cumulative variance)
@@ -280,7 +281,7 @@ def plot_ff_dashboard(
     ff:    FFResult,
     save:  bool = True,
     fname: str  = "ff_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4-panel Fama-French dashboard:
       A - Factor beta heatmap
@@ -369,7 +370,7 @@ def plot_rolling_var(
     confidence: float = 0.95,
     save:       bool  = True,
     fname:      str   = "rolling_var.png",
-) -> plt.Figure:
+) -> Figure:
     """
     3-panel rolling VaR dashboard:
       A - Daily returns with rolling VaR overlay (full-width)
@@ -451,7 +452,7 @@ def plot_benchmark(
     results: dict,
     save:    bool = True,
     fname:   str  = "benchmark.png",
-) -> plt.Figure:
+) -> Figure:
     """Grouped bar chart comparing Python vs C++ latencies."""
     fig, ax = plt.subplots(1, 1, figsize=(10, 5))
     fig.patch.set_facecolor(C["bg"])

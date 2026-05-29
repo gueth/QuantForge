@@ -11,6 +11,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.figure import Figure
 from pathlib import Path
 from scipy import stats
 
@@ -57,7 +58,7 @@ def plot_performance_dashboard(
     metrics: PerformanceMetrics,
     save: bool = True,
     fname: str = "performance_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4 panels: equity curve, drawdown, daily P&L distribution, rolling Sharpe.
     """
@@ -139,7 +140,7 @@ def plot_signal_dashboard(
     prices_x: pd.Series,
     save: bool = True,
     fname: str = "signal_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4 panels: price series, hedge ratio, spread + z-score, signal positions.
     """
@@ -216,7 +217,7 @@ def plot_comparison_dashboard(
     strategies: list[PerformanceMetrics],
     save: bool = True,
     fname: str = "comparison_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """Bar charts comparing multiple strategies across key metrics."""
     from backtest import compare_strategies
     table = compare_strategies(strategies)
@@ -265,7 +266,7 @@ def plot_walkforward_dashboard(
     wf_result,
     save: bool = True,
     fname: str = "walkforward_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     3 panels: OOS equity curve, per-fold Sharpe, cumulative OOS returns.
     """

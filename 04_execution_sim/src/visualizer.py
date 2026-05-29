@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from scipy import stats
+from matplotlib.figure import Figure
 from pathlib import Path
 
 from schedules import ExecutionSchedule
@@ -60,7 +60,7 @@ def plot_schedule_dashboard(
     schedules: list[ExecutionSchedule],
     save: bool = True,
     fname: str = "schedule_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4 panels: trade sizes, cumulative trades, participation rate, holdings profile.
     """
@@ -122,7 +122,7 @@ def plot_is_dashboard(
     reports: list[ExecutionReport],
     save: bool = True,
     fname: str = "is_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4 panels: IS distributions, VaR comparison, cost decomposition, IS vs λ.
     """
@@ -198,7 +198,7 @@ def plot_efficient_frontier(
     vwap_report: Optional[ExecutionReport] = None,
     save: bool = True,
     fname: str = "efficient_frontier.png",
-) -> plt.Figure:
+) -> Figure:
     """
     Efficient frontier: E[IS] vs Std[IS] as λ varies.
     Benchmarks TWAP and VWAP shown as reference points.

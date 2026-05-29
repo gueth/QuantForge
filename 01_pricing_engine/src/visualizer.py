@@ -10,6 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.figure import Figure
 from pathlib import Path
 from scipy.stats import norm
 
@@ -70,7 +71,7 @@ def plot_pricing_dashboard(
     T: float  = 1.0,
     save: bool = True,
     fname: str = "pricing_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4 panels:
     A — Call & Put prices vs Strike (BS closed-form + MC comparison)
@@ -168,7 +169,7 @@ def plot_greeks_dashboard(
     T: float  = 1.0,
     save: bool = True,
     fname: str = "greeks_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4 panels: Delta, Gamma, Vega, Theta — call & put — vs spot price.
     """
@@ -225,7 +226,7 @@ def plot_mc_dashboard(
     T: float  = 1.0,
     save: bool = True,
     fname: str = "mc_dashboard.png",
-) -> plt.Figure:
+) -> Figure:
     """
     4 panels:
     A — Terminal price distribution (log-normal verification)

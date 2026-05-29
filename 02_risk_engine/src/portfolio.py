@@ -186,7 +186,7 @@ class _PyRiskEngine:
         k = self._N if n_components < 0 or n_components > self._N else n_components
 
         R_c                       = self._returns - self._returns.mean(axis=0)
-        cov: np.ndarray           = np.cov(R_c.T)
+        cov                       = np.cov(R_c.T)
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
 
         order        = np.argsort(eigenvalues)[::-1]
@@ -428,8 +428,8 @@ class Portfolio:
         )
         f_cols = [c for c in factors.columns if c != rf_col]
 
-        F: np.ndarray  = factors.loc[common, f_cols].values.astype(np.float64)
-        rf: np.ndarray = (
+        F  = factors.loc[common, f_cols].values.astype(np.float64)
+        rf = (
             factors.loc[common, rf_col].values.astype(np.float64)
             if rf_col else np.zeros(len(common))
         )
