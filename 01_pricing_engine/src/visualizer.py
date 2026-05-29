@@ -19,7 +19,7 @@ from black_scholes import (
 )
 from monte_carlo import mc_call_price
 
-OUT = Path(__file__).parent.parent / "notebooks"
+OUT = Path(__file__).parent.parent / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ── Palette ──────────────────────────────────────────────────

@@ -1,0 +1,18 @@
+# Compiled C++ extensions
+*.pyd
+*.exe
+*.so
+*.dll
+
+# Build directories
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Virtual environment
+.venv/

@@ -18,7 +18,7 @@ from pathlib import Path
 from schedules import ExecutionSchedule
 from simulator import ExecutionReport
 
-OUT = Path(__file__).parent.parent / "notebooks"
+OUT = Path(__file__).parent.parent / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
 
 C = {

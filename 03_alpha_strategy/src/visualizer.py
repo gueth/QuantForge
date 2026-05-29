@@ -18,7 +18,7 @@ from scipy import stats
 from backtest import PerformanceMetrics
 from signals import KalmanPairsSignal
 
-OUT = Path(__file__).parent.parent / "notebooks"
+OUT = Path(__file__).parent.parent / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
 
 C = {

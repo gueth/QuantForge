@@ -18,7 +18,7 @@ from pathlib import Path
 
 from portfolio import Portfolio, PCAResult, FFResult, RiskReport
 
-OUT = Path(__file__).parent.parent / "notebooks"
+OUT = Path(__file__).parent.parent / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
