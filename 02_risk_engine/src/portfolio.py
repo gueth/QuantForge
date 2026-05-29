@@ -428,9 +428,9 @@ class Portfolio:
         )
         f_cols = [c for c in factors.columns if c != rf_col]
 
-        F  = factors.loc[common, f_cols].values.astype(np.float64)
-        rf = (
-            factors.loc[common, rf_col].values.astype(np.float64)
+        F: np.ndarray  = np.asarray(factors.loc[common, f_cols], dtype=np.float64)
+        rf: np.ndarray = (
+            np.asarray(factors.loc[common, rf_col], dtype=np.float64)
             if rf_col else np.zeros(len(common))
         )
 
