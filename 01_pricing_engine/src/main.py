@@ -22,6 +22,10 @@ import time
 import numpy as np
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows (cp1252 terminals reject box-drawing chars)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from black_scholes import (
@@ -36,21 +40,21 @@ from visualizer import (
 )
 
 
-def sep(title: str = ""):
+def sep(title: str = "") -> None:
     w = 58
     if title:
-        p = (w - len(title) - 2) // 2
-        print(f"\n{'─'*p} {title} {'─'*(w - p - len(title) - 2)}")
+        pad = (w - len(title) - 2) // 2
+        print(f"\n{'-'*pad} {title} {'-'*(w - pad - len(title) - 2)}")
     else:
-        print("─" * w)
+        print("-" * w)
 
 
 def run():
     t_global = time.perf_counter()
 
-    print("\n" + "═" * 58)
-    print("  QuantForge — Module 1: Pricing Engine")
-    print("═" * 58)
+    print("\n" + "=" * 58)
+    print("  QuantForge - Module 1: Pricing Engine")
+    print("=" * 58)
 
     # Reference parameters
     S0, K, r, sigma, T = 100.0, 100.0, 0.05, 0.20, 1.0
@@ -64,7 +68,7 @@ def run():
         ("ITM  (K=90) ", 90.0),
     ]
     print(f"\n  {'Contract':<20} {'Call':>10} {'Put':>10}  {'Parity err':>12}")
-    print(f"  {'─'*55}")
+    print(f"  {'-'*55}")
     for label, k in cases:
         call = bs_call_price(S0, k, r, sigma, T)
         put  = bs_put_price(S0, k, r, sigma, T)
@@ -76,7 +80,7 @@ def run():
 
     g = bs_greeks(S0, K, r, sigma, T)
     print(f"\n  {'Greek':<15} {'Call':>10} {'Put':>10}")
-    print(f"  {'─'*38}")
+    print(f"  {'-'*38}")
     greek_pairs = [
         ("Delta",   "delta_call", "delta_put"),
         ("Gamma",   "gamma",      None),
@@ -94,7 +98,7 @@ def run():
 
     test_vols = [0.15, 0.20, 0.25, 0.30, 0.35]
     print(f"\n  {'True σ':>10} {'IV (call)':>12} {'IV (put)':>12} {'Error':>10}")
-    print(f"  {'─'*48}")
+    print(f"  {'-'*48}")
     for true_vol in test_vols:
         mp_call = bs_call_price(S0, K, r, true_vol, T)
         mp_put  = bs_put_price(S0, K, r, true_vol, T)
@@ -110,7 +114,7 @@ def run():
     bs_ref = bs_call_price(S0, K, r, sigma, T)
     print(f"\n  BS exact call = {bs_ref:.4f}")
     print(f"\n  {'Method':<30} {'Price':>8} {'Error':>8} {'Time (ms)':>10}")
-    print(f"  {'─'*60}")
+    print(f"  {'-'*60}")
 
     methods = [
         ("MC naive (100k)", lambda: mc_call_price(S0, K, r, sigma, T, 100_000)),
@@ -131,7 +135,7 @@ def run():
     print(f"\n  Vanilla call (BS):          {bs_ref:.4f}")
     barriers = [110, 120, 130, 150]
     print(f"\n  {'Barrier':>10} {'Price':>10} {'Discount %':>12}")
-    print(f"  {'─'*36}")
+    print(f"  {'-'*36}")
     np.random.seed(42)
     for B in barriers:
         np.random.seed(42)
@@ -180,8 +184,8 @@ def run():
     # ── Done ──────────────────────────────────────────────────
     sep()
     elapsed = time.perf_counter() - t_global
-    print(f"\n  ✓ Module 1 complete — {elapsed:.2f}s")
-    print(f"  Charts → {Path(__file__).parent.parent / 'notebooks'}/\n")
+    print(f"\n  Module 1 complete -- {elapsed:.2f}s")
+    print(f"  Charts saved to: {Path(__file__).parent.parent / 'notebooks'}/\n")
 
 
 if __name__ == "__main__":

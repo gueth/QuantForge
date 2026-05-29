@@ -55,7 +55,7 @@ class PerformanceMetrics:
     daily_pnl      : pd.Series = field(repr=False, default_factory=pd.Series)
 
     def __str__(self) -> str:
-        bar = "─" * 52
+        bar = "-" * 52
         return (
             f"\n{bar}\n"
             f"  {self.strategy_name}\n"

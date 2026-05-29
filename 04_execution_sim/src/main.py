@@ -22,6 +22,10 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows cp1252 terminals
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from schedules import twap, vwap, almgren_chriss
@@ -31,21 +35,21 @@ from visualizer import (
 )
 
 
-def sep(title: str = ""):
+def sep(title: str = "") -> None:
     w = 58
     if title:
-        p = (w - len(title) - 2) // 2
-        print(f"\n{'─'*p} {title} {'─'*(w - p - len(title) - 2)}")
+        pad = (w - len(title) - 2) // 2
+        print(f"\n{'-'*pad} {title} {'-'*(w - pad - len(title) - 2)}")
     else:
-        print("─" * w)
+        print("-" * w)
 
 
 def run():
     t0 = time.perf_counter()
 
-    print("\n" + "═" * 58)
-    print("  QuantForge — Module 4: Execution Simulator")
-    print("═" * 58)
+    print("\n" + "=" * 58)
+    print("  QuantForge - Module 4: Execution Simulator")
+    print("=" * 58)
 
     # ── 1. Market parameters ──────────────────────────────────
     sep("PARAMETERS")
@@ -72,7 +76,7 @@ def run():
                                  lam=lam, N=N, tau=tau)
 
     print(f"\n  {'':<26} {'Front-load':>11} {'Back-load':>11}")
-    print(f"  {'─'*50}")
+    print(f"  {'-'*50}")
     for sched in [sched_twap, sched_vwap, sched_ac]:
         fl = sched.trades[:N//2].sum() / X * 100
         bl = sched.trades[N//2:].sum() / X * 100
@@ -132,7 +136,7 @@ def run():
     eta_values = [1e-7, 2.5e-7, 5e-7, 1e-6]
     print(f"\n  Effect of temporary impact η on IS  (TWAP, N={N}):")
     print(f"\n  {'η':>10} {'E[IS] (bps)':>14} {'σ[IS] (bps)':>14}")
-    print(f"  {'─'*40}")
+    print(f"  {'-'*40}")
     for eta_i in eta_values:
         sim_i  = ExecutionSimulator(sigma=sigma, eta=eta_i, gamma=gamma,
                                     tau=tau, arrival_price=arrival_price,
@@ -155,8 +159,8 @@ def run():
     # ── Done ──────────────────────────────────────────────────
     sep()
     elapsed = time.perf_counter() - t0
-    print(f"\n  ✓ Module 4 complete — {elapsed:.2f}s")
-    print(f"  Charts → {Path(__file__).parent.parent / 'notebooks'}/\n")
+    print(f"\n  Module 4 complete -- {elapsed:.2f}s")
+    print(f"  Charts saved to: {Path(__file__).parent.parent / 'notebooks'}/\n")
 
 
 if __name__ == "__main__":

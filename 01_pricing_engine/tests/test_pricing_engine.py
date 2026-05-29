@@ -75,13 +75,13 @@ class TestBlackScholesCall:
             assert bs_call_price(100, K_val, 0.05, 0.20, 1.0) >= 0
 
     def test_intrinsic_value_lower_bound(self):
-        """C ≥ max(S0 - K·e^{-rT}, 0)  (absence d'arbitrage)."""
+        """C >= max(S0 - K*exp(-rT), 0)  (no-arbitrage lower bound)."""
         C   = bs_call_price(S0, K, r, sigma, T)
         lb  = max(S0 - K * np.exp(-r * T), 0)
         assert C >= lb - 1e-10
 
     def test_increasing_in_sigma(self):
-        """Prix croissant en volatilité."""
+        """Call price is monotonically increasing in volatility."""
         prices = [bs_call_price(S0, K, r, v, T) for v in [0.10, 0.20, 0.30, 0.40]]
         assert all(prices[i] < prices[i+1] for i in range(len(prices)-1))
 
@@ -94,7 +94,7 @@ class TestBlackScholesCall:
         assert all(prices[i] > prices[i+1] for i in range(len(prices)-1))
 
     def test_approaches_intrinsic_deep_itm(self):
-        """Deep ITM → C ≈ S0 - K·e^{-rT}."""
+        """Deep ITM: C converges to S0 - K*exp(-rT)."""
         C  = bs_call_price(200, 100, 0.05, 0.20, 1.0)
         lb = 200 - 100 * np.exp(-0.05)
         assert abs(C - lb) < 1.0
@@ -115,7 +115,7 @@ class TestBlackScholesPut:
 
     def test_otm_put_less_than_atm(self):
         atm = bs_put_price(100, 100, 0.05, 0.20, 1.0)
-        otm = bs_put_price(100,  90, 0.05, 0.20, 1.0)   # S > K → OTM put
+        otm = bs_put_price(100,  90, 0.05, 0.20, 1.0)   # S > K: OTM put
         assert otm < atm
 
 
@@ -152,7 +152,7 @@ class TestGreeks:
         assert self.g["delta_put"] == pytest.approx(self.g["delta_call"] - 1.0, abs=1e-10)
 
     def test_delta_call_atm_approx_half(self):
-        """ATM delta ≈ 0.5 (légèrement supérieur à cause du drift)."""
+        """ATM call delta is slightly above 0.5 due to the positive drift term."""
         assert 0.50 < self.g["delta_call"] < 0.70
 
     def test_gamma_positive(self):
@@ -169,11 +169,11 @@ class TestGreeks:
         assert self.g["theta_put"] < 0
 
     def test_rho_call_positive(self):
-        """Call : taux élevé → valeur plus élevée."""
+        """Higher interest rates increase call value."""
         assert self.g["rho_call"] > 0
 
     def test_rho_put_negative(self):
-        """Put : taux élevé → valeur moins élevée."""
+        """Higher interest rates decrease put value."""
         assert self.g["rho_put"] < 0
 
     def test_delta_call_exact_formula(self):
@@ -182,7 +182,7 @@ class TestGreeks:
         assert self.g["delta_call"] == pytest.approx(norm.cdf(d1), abs=1e-10)
 
     def test_gamma_exact_formula(self):
-        """gamma = φ(d1) / (S0 σ √T)."""
+        """Verify exact formula: gamma = phi(d1) / (S0 * sigma * sqrt(T))."""
         d1, _ = compute_d1_d2(S0, K, r, sigma, T)
         expected = norm.pdf(d1) / (S0 * sigma * np.sqrt(T))
         assert self.g["gamma"] == pytest.approx(expected, abs=1e-10)
@@ -199,7 +199,7 @@ class TestGreeks:
 class TestImpliedVolatility:
 
     def test_round_trip_call(self):
-        """IV(BS(σ)) ≈ σ."""
+        """Implied vol round-trip: IV(BS(sigma)) must recover sigma."""
         sigma_test = 0.25
         price = bs_call_price(S0, K, r, sigma_test, T)
         iv    = bs_implied_vol(price, S0, K, r, T, "call")
@@ -218,7 +218,7 @@ class TestImpliedVolatility:
         assert iv == pytest.approx(sigma_test, abs=1e-5)
 
     def test_below_intrinsic_returns_nan(self):
-        """Prix < valeur intrinsèque → pas de solution."""
+        """Price below intrinsic value has no implied vol solution."""
         iv = bs_implied_vol(-1.0, S0, K, r, T, "call")
         assert np.isnan(iv)
 
@@ -316,7 +316,7 @@ class TestMCBarrier:
         assert barrier < vanilla + 0.5
 
     def test_high_barrier_approaches_vanilla(self):
-        """Barrière très haute → option presque jamais knockée → ≈ vanille."""
+        """Very high barrier: almost never knocked out, price approaches vanilla."""
         np.random.seed(RNG_SEED)
         barrier = mc_barrier_call_price(100, 100, 1e6, 0.05, 0.20, 1.0,
                                          n_paths=100_000)
@@ -325,7 +325,7 @@ class TestMCBarrier:
         assert abs(barrier - vanilla) < 0.20
 
     def test_barrier_at_spot_is_zero(self):
-        """Barrière = spot → option immédiatement knockée → prix ≈ 0."""
+        """Barrier at spot: immediately knocked out on the first monitoring point."""
         np.random.seed(RNG_SEED)
         price = mc_barrier_call_price(100, 100, 100, 0.05, 0.20, 1.0)
         assert price == pytest.approx(0.0, abs=0.01)
@@ -336,7 +336,7 @@ class TestMCBarrier:
         assert price >= 0
 
     def test_lower_barrier_cheaper(self):
-        """Barrière plus basse → plus de knock-outs → prix plus faible."""
+        """Lower barrier increases knock-out probability, reducing the price."""
         np.random.seed(RNG_SEED)
         low  = mc_barrier_call_price(100, 100, 115, 0.05, 0.20, 1.0)
         np.random.seed(RNG_SEED)

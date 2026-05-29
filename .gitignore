@@ -1,0 +1,58 @@
+# ─── Python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# ─── C++ compiled extensions (pybind11) ──────────────────────
+*.pyd
+*.so
+*.dll
+*.dylib
+*.exe
+*.pdb
+
+# ─── Build artifacts ─────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+
+# ─── Virtual environments ────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── IDE configuration ───────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ─── Jupyter ─────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ─── Data cache (Fama-French factors, etc.) ──────────────────
+*.parquet
+*.h5
+*.hdf5
+
+# ─── OS artifacts ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Test / coverage artifacts ───────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ─── Temporary files ─────────────────────────────────────────
+*.tmp
+*.log
+*.swp
+*~

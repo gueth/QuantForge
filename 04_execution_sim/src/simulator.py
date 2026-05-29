@@ -72,7 +72,7 @@ class ExecutionReport:
         return self.std_is / self.arrival_price * 1e4
 
     def __str__(self) -> str:
-        bar = "─" * 52
+        bar = "-" * 52
         return (
             f"\n{bar}\n"
             f"  {self.schedule_name}  |  {self.total_shares:.0f} shares  "

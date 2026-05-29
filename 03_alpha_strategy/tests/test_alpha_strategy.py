@@ -184,11 +184,13 @@ class TestCrossSectionalMomentum:
         pnl = mom.pnl_series(universe)
         assert len(pnl) == len(universe)
 
-    def test_first_lookback_rows_are_nan(self, universe):
+    def test_first_lookback_rows_are_flat(self, universe):
+        """During the warm-up period the signal is flat (all zeros, no position)."""
         lookback = 21
-        mom = CrossSectionalMomentum(lookback=lookback).fit(universe)
-        first_nonnan = mom.signal_.iloc[:lookback].dropna(how="all")
-        assert len(first_nonnan) == 0
+        mom      = CrossSectionalMomentum(lookback=lookback).fit(universe)
+        # First (lookback - 1) rows: no momentum can be computed -> signal = 0
+        warmup = mom.signal_.iloc[:lookback - 1]
+        assert (warmup.values == 0.0).all()
 
 
 # ─────────────────────────────────────────────────────────────

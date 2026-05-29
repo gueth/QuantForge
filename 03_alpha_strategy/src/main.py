@@ -24,6 +24,10 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows cp1252 terminals
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from signals import (
@@ -38,21 +42,21 @@ from visualizer import (
 )
 
 
-def sep(title: str = ""):
+def sep(title: str = "") -> None:
     w = 58
     if title:
-        p = (w - len(title) - 2) // 2
-        print(f"\n{'─'*p} {title} {'─'*(w - p - len(title) - 2)}")
+        pad = (w - len(title) - 2) // 2
+        print(f"\n{'-'*pad} {title} {'-'*(w - pad - len(title) - 2)}")
     else:
-        print("─" * w)
+        print("-" * w)
 
 
 def run():
     t0 = time.perf_counter()
 
-    print("\n" + "═" * 58)
-    print("  QuantForge — Module 3: Alpha Strategy")
-    print("═" * 58)
+    print("\n" + "=" * 58)
+    print("  QuantForge - Module 3: Alpha Strategy")
+    print("=" * 58)
 
     # ── 1. Data ───────────────────────────────────────────────
     sep("DATA")
@@ -129,7 +133,7 @@ def run():
     print(f"\n  n_splits={pkf.n_splits}  purge={pkf.purge_pct*100:.1f}%  "
           f"embargo={pkf.embargo_pct*100:.1f}%")
     print(f"\n  {'Fold':<6} {'Train obs':>10} {'Test obs':>10}")
-    print(f"  {'─'*30}")
+    print(f"  {'-'*30}")
     for i, (tr, te) in enumerate(pkf.split(dummy_X)):
         print(f"  {i+1:<6} {len(tr):>10} {len(te):>10}")
 
@@ -187,8 +191,8 @@ def run():
     # ── Done ──────────────────────────────────────────────────
     sep()
     elapsed = time.perf_counter() - t0
-    print(f"\n  ✓ Module 3 complete — {elapsed:.2f}s")
-    print(f"  Charts → {Path(__file__).parent.parent / 'notebooks'}/\n")
+    print(f"\n  Module 3 complete -- {elapsed:.2f}s")
+    print(f"  Charts saved to: {Path(__file__).parent.parent / 'notebooks'}/\n")
 
 
 if __name__ == "__main__":

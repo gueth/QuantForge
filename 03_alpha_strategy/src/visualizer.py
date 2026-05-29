@@ -222,10 +222,10 @@ def plot_comparison_dashboard(
     table = compare_strategies(strategies)
 
     metrics_to_plot = [
-        ("Sharpe",        "Sharpe Ratio"),
-        ("Annual Ret (%)", "Annual Return (%)"),
-        ("Max DD (%)",    "Max Drawdown (%)"),
-        ("Hit Rate (%)",  "Hit Rate (%)"),
+        ("Sharpe",           "Sharpe Ratio"),
+        ("Annual Return (%)", "Annual Return (%)"),
+        ("Max DD (%)",       "Max Drawdown (%)"),
+        ("Hit Rate (%)",     "Hit Rate (%)"),
     ]
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 8))
