@@ -32,7 +32,8 @@ from portfolio import (
     Portfolio, synthetic_portfolio, synthetic_ff_factors, load_fama_french
 )
 from visualizer import (
-    plot_var_dashboard, plot_pca_dashboard, plot_ff_dashboard, plot_benchmark
+    plot_var_dashboard, plot_pca_dashboard, plot_ff_dashboard,
+    plot_rolling_var, plot_benchmark,
 )
 
 
@@ -219,7 +220,19 @@ def run(use_real: bool = False, use_ff: bool = False):
     stress = portfolio.stress_test(scenarios)
     print(f"\n{stress.to_string()}")
 
-    # ── 6. Benchmark ──────────────────────────────────────────
+    # ── 6. Rolling VaR ────────────────────────────────────────
+    sep("ROLLING VaR")
+
+    window_rv = min(252, portfolio.T // 4)
+    rv = portfolio.rolling_var(confidence=0.95, window=window_rv)
+    print(f"\n  Fenêtre : {window_rv} jours | {len(rv)} observations")
+    print(f"  VaR moy.   : {rv.mean()*100:.4f}%")
+    print(f"  VaR max    : {rv.max()*100:.4f}%")
+    print(f"  VaR min    : {rv.min()*100:.4f}%")
+    peak_date = rv.idxmax().strftime("%Y-%m-%d")
+    print(f"  Pic le     : {peak_date} ({rv.max()*100:.4f}%)")
+
+    # ── 7. Benchmark C++ vs Python ────────────────────────────
     sep("BENCHMARK C++ vs PYTHON")
 
     print("  50 runs par méthode, T=1260, N=5...")
@@ -229,7 +242,7 @@ def run(use_real: bool = False, use_ff: bool = False):
     for k, v in bench.items():
         print(f"  {k:<15} {v['python_ms']:>9.3f}ms {v['cpp_ms']:>9.3f}ms   ×{v['speedup']:>5.1f}")
 
-    # ── 7. Visualisations ─────────────────────────────────────
+    # ── 8. Visualisations ─────────────────────────────────────
     sep("VISUALISATIONS")
 
     report_95 = portfolio.full_report(0.95)
@@ -241,6 +254,9 @@ def run(use_real: bool = False, use_ff: bool = False):
 
     print("  Dashboard Fama-French...")
     plot_ff_dashboard(ff)
+
+    print("  Dashboard Rolling VaR...")
+    plot_rolling_var(portfolio, window=window_rv, confidence=0.95)
 
     print("  Benchmark chart...")
     plot_benchmark(bench)

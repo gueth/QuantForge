@@ -70,14 +70,9 @@ class TestPortfolio:
         assert len(port.portfolio_returns) == port.T
 
     def test_portfolio_returns_weighted_sum(self, port):
-        """r_p = Σ wᵢ rᵢ  vérifiée : cohérence C++ et pandas."""
-        # Le C++ et pandas peuvent avoir des ordres de sommation légèrement différents
-        # On vérifie que les deux sont cohérents en termes de magnitude
-        pr = port.portfolio_returns.values
-        # Rendement moyen pondéré doit être dans les bornes des rendements individuels
-        asset_means = port.returns.mean()
-        port_mean = pr.mean()
-        assert asset_means.min() - 1e-8 <= port_mean <= asset_means.max() + 1e-8
+        """r_p = Σ wᵢ rᵢ  (vérification exacte C++ vs pandas)."""
+        expected = port.returns.values @ port.weights
+        np.testing.assert_allclose(port.portfolio_returns.values, expected, rtol=1e-6)
 
     def test_repr_contains_name(self, port):
         assert "Test" in repr(port)
@@ -256,7 +251,8 @@ class TestFamaFrench:
     def test_betas_shape(self, port, factors):
         ff = port.fama_french(factors)
         factor_cols = [c for c in factors.columns if c.upper() not in ("RF", "RFR")]
-        assert ff.betas.shape == (port.N, len(factor_cols)) if hasattr(ff, "betas") else True
+        # ff.betas est une propriété numpy (n_assets × n_factors)
+        assert ff.betas.shape == (port.N, len(factor_cols))
         # Via summary
         summary = ff.summary()
         assert summary.shape[0] == port.N

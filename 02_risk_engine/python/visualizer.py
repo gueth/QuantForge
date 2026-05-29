@@ -338,7 +338,84 @@ def plot_ff_dashboard(
     return fig
 
 
-# ── 4. Benchmark Python vs C++ ────────────────────────────────
+# ── 4. Rolling VaR ───────────────────────────────────────────
+
+def plot_rolling_var(
+    portfolio: Portfolio,
+    window: int = 252,
+    confidence: float = 0.95,
+    save: bool = True,
+    fname: str = "rolling_var.png",
+) -> plt.Figure:
+    """
+    3 panneaux :
+    A — Rendements journaliers du portefeuille + VaR glissante
+    B — VaR historique vs paramétrique (fenêtre glissante)
+    C — Distribution de la VaR glissante
+    """
+    rv_hist  = portfolio.rolling_var(confidence=confidence, window=window,
+                                     parametric=False)
+    rv_param = portfolio.rolling_var(confidence=confidence, window=window,
+                                     parametric=True)
+    pr       = portfolio.portfolio_returns
+
+    fig = _fig(w=16, h=10)
+    gs  = gridspec.GridSpec(2, 2, figure=fig, hspace=0.40, wspace=0.32)
+
+    # ── A : Rendements + VaR glissante ────────────────────────
+    ax1 = fig.add_subplot(gs[0, :])   # occupe toute la rangée du haut
+    ax1.fill_between(pr.index, pr.values * 100,
+                     where=pr.values >= 0, alpha=0.35, color=C["accent3"])
+    ax1.fill_between(pr.index, pr.values * 100,
+                     where=pr.values < 0,  alpha=0.45, color=C["accent2"])
+    ax1.plot(pr.index, pr.values * 100, lw=0.6, color=C["muted"], alpha=0.7)
+    ax1.plot(rv_hist.index,  -rv_hist.values  * 100,
+             lw=1.6, color=C["accent2"], ls="--",
+             label=f"−VaR hist. {confidence*100:.0f}%")
+    ax1.plot(rv_param.index, -rv_param.values * 100,
+             lw=1.6, color=C["accent4"], ls="-.",
+             label=f"−VaR param. {confidence*100:.0f}%")
+    ax1.axhline(0, color=C["muted"], lw=0.8, ls="--")
+    ax1.set_title(f"Rendements journaliers & VaR glissante (fenêtre {window}j)",
+                  color=C["text"])
+    ax1.set_xlabel("Date"); ax1.set_ylabel("Rendement (%)")
+    ax1.legend(fontsize=9)
+
+    # ── B : VaR hist vs param ─────────────────────────────────
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax2.plot(rv_hist.index,  rv_hist.values  * 100,
+             color=C["accent2"], lw=1.4, label="VaR hist.")
+    ax2.plot(rv_param.index, rv_param.values * 100,
+             color=C["accent4"], lw=1.4, ls="--", label="VaR param.")
+    ax2.set_title(f"VaR glissante {confidence*100:.0f}% ({window}j)", color=C["text"])
+    ax2.set_xlabel("Date"); ax2.set_ylabel("VaR (%)")
+    ax2.legend(fontsize=9)
+
+    # ── C : Distribution de la VaR glissante ─────────────────
+    ax3 = fig.add_subplot(gs[1, 1])
+    v_hist = rv_hist.values * 100
+    n_bins = min(50, max(15, len(v_hist) // 10))
+    ax3.hist(v_hist, bins=n_bins, density=True, color=C["accent2"],
+             alpha=0.65, edgecolor="none", label="VaR hist.")
+    ax3.axvline(np.mean(v_hist), color=C["accent3"], lw=1.8, ls="--",
+                label=f"Moyenne {np.mean(v_hist):.2f}%")
+    ax3.axvline(np.percentile(v_hist, 95), color=C["accent4"], lw=1.5, ls="-.",
+                label=f"95e pct. {np.percentile(v_hist, 95):.2f}%")
+    ax3.set_title("Distribution de la VaR glissante", color=C["text"])
+    ax3.set_xlabel("VaR (%)"); ax3.set_ylabel("Densité")
+    ax3.legend(fontsize=8)
+
+    fig.suptitle(f"QuantForge — Rolling VaR | {portfolio.name} | fenêtre {window}j",
+                 color=C["text"], fontsize=12, y=0.99)
+
+    if save:
+        p = OUT / fname
+        fig.savefig(p, bbox_inches="tight", dpi=150)
+        print(f"  ✓ Sauvegardé → {p}")
+    return fig
+
+
+# ── 5. Benchmark Python vs C++ ────────────────────────────────
 
 def plot_benchmark(
     results: dict,

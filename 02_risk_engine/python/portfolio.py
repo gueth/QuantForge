@@ -253,6 +253,16 @@ class FFResult:
     factor_names : list[str]
     asset_names  : list[str]
 
+    @property
+    def betas(self) -> np.ndarray:
+        """Matrice des bêtas : shape (n_assets, n_factors)."""
+        return np.array([r["betas"] for r in self.raw])
+
+    @property
+    def alphas(self) -> np.ndarray:
+        """Vecteur des alphas journaliers : shape (n_assets,)."""
+        return np.array([r["alpha"] for r in self.raw])
+
     def summary(self) -> pd.DataFrame:
         rows = []
         for r in self.raw:
