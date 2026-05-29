@@ -9,13 +9,8 @@ Covers:
   - Efficient frontier properties
 
 Run:
-    cd 04_execution_sim
-    python -m pytest tests/ -v
+    pytest 04_execution_sim/tests/ -v
 """
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 import numpy as np
 import pytest
 

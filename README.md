@@ -3,8 +3,9 @@
 ### A Full-Stack Quantitative Trading System — from Stochastic Pricing to Optimal Execution
 
 [![Language](https://img.shields.io/badge/C%2B%2B-17-blue)](https://isocpp.org/)
-[![Language](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
+[![Language](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![CI](https://github.com/bayih/QuantForge/actions/workflows/ci.yml/badge.svg)](https://github.com/bayih/QuantForge/actions)
 
 QuantForge is an end-to-end quantitative trading system built from scratch, covering the full pipeline of a quantitative desk: **derivative pricing → risk analytics → alpha generation → optimal execution**.
 
@@ -112,6 +113,11 @@ Every module follows the same layout:
 ├── src/               # Python source (module.py, visualizer.py, main.py)
 ├── cpp/               # C++ source and pybind11 bindings
 └── tests/             # pytest unit tests
+
+QuantForge/
+├── pyproject.toml     # Project metadata, dependencies, pytest config
+├── conftest.py        # Adds each src/ to sys.path — no path hacks in tests
+└── .github/workflows/ci.yml  # GitHub Actions: tests on Python 3.10/3.11/3.12
 ```
 
 ---
@@ -119,8 +125,8 @@ Every module follows the same layout:
 ## Quick Start
 
 ```bash
-# 1. Install Python dependencies
-pip install -r requirements.txt
+# 1. Install the project and dev dependencies
+pip install -e ".[dev]"
 
 # 2. (Optional) Compile C++ extensions for each module
 cd 01_pricing_engine && python setup.py build_ext --inplace && cd ..
@@ -129,10 +135,10 @@ cd 03_alpha_strategy  && python setup.py build_ext --inplace && cd ..
 cd 04_execution_sim   && python setup.py build_ext --inplace && cd ..
 
 # 3. Run any module demo
-cd 01_pricing_engine/src && python main.py
-cd 02_risk_engine/src    && python main.py
-cd 03_alpha_strategy/src && python main.py
-cd 04_execution_sim/src  && python main.py
+python 01_pricing_engine/src/main.py
+python 02_risk_engine/src/main.py
+python 03_alpha_strategy/src/main.py
+python 04_execution_sim/src/main.py
 ```
 
 All modules fall back to pure NumPy when the C++ extension is not compiled.
@@ -142,11 +148,11 @@ All modules fall back to pure NumPy when the C++ extension is not compiled.
 ## Run All Tests
 
 ```bash
-# From each module directory:
-python -m pytest 01_pricing_engine/tests/ -v
-python -m pytest 02_risk_engine/tests/    -v
-python -m pytest 03_alpha_strategy/tests/ -v
-python -m pytest 04_execution_sim/tests/  -v
+# From the project root — runs all 150+ tests across every module
+pytest
+
+# Or target a specific module
+pytest 02_risk_engine/tests/ -v
 ```
 
 Total: **150+ unit tests** covering mathematical invariants, edge cases, and performance contracts.
@@ -161,8 +167,9 @@ Total: **150+ unit tests** covering mathematical invariants, edge cases, and per
 | Python binding | pybind11 |
 | Data/analysis | NumPy · SciPy · pandas |
 | Visualisation | Matplotlib (dark-theme, publication-ready) |
-| Testing | pytest |
-| Build | setuptools + Extension |
+| Testing | pytest (config in `pyproject.toml`) |
+| Build | setuptools · `pyproject.toml` · pybind11 |
+| CI | GitHub Actions (Python 3.10 / 3.11 / 3.12) |
 
 ---
 

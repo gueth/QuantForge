@@ -83,8 +83,8 @@ By sweeping the risk-aversion parameter $\lambda$, we trace an efficient frontie
 ## Quick Start
 
 ```python
-from src.schedules import twap, vwap, almgren_chriss
-from src.simulator import ExecutionSimulator, compare_schedules
+from schedules import twap, vwap, almgren_chriss
+from simulator import ExecutionSimulator, compare_schedules
 
 # Market parameters
 X, N = 100_000, 20
@@ -121,15 +121,14 @@ The module falls back to pure NumPy if the extension is not compiled.
 ## Run the Demo
 
 ```bash
-cd 04_execution_sim/src
-python main.py
+python 04_execution_sim/src/main.py
 ```
 
 ## Run Tests
 
 ```bash
-cd 04_execution_sim
-python -m pytest tests/ -v
+# From the project root
+pytest 04_execution_sim/tests/ -v
 ```
 
 ## References

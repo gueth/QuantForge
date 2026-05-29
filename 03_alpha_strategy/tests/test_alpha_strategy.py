@@ -10,13 +10,8 @@ Covers:
   - WalkForwardAnalysis (OOS consistency)
 
 Run:
-    cd 03_alpha_strategy
-    python -m pytest tests/ -v
+    pytest 03_alpha_strategy/tests/ -v
 """
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 import numpy as np
 import pandas as pd
 import pytest

@@ -67,8 +67,8 @@ $$S_T = S_0\exp\!\left[\left(r - \tfrac{\sigma^2}{2}\right)T + \sigma\sqrt{T}\,Z
 ## Quick Start
 
 ```python
-from src.black_scholes import bs_call_price, bs_greeks, bs_implied_vol
-from src.monte_carlo   import mc_call_price, mc_call_price_antithetic
+from black_scholes import bs_call_price, bs_greeks, bs_implied_vol
+from monte_carlo   import mc_call_price, mc_call_price_antithetic
 
 # Closed-form ATM call — should be ≈ 10.4506
 price = bs_call_price(S0=100, K=100, r=0.05, sigma=0.20, T=1.0)
@@ -98,17 +98,16 @@ python setup.py build_ext --inplace
 ## Run the Demo
 
 ```bash
-cd 01_pricing_engine/src
-python main.py
+python 01_pricing_engine/src/main.py
 ```
 
-Charts are saved to `notebooks/`.
+Charts are saved to `01_pricing_engine/outputs/`.
 
 ## Run Tests
 
 ```bash
-cd 01_pricing_engine
-python -m pytest tests/ -v
+# From the project root
+pytest 01_pricing_engine/tests/ -v
 ```
 
 ## Performance

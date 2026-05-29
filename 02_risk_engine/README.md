@@ -67,7 +67,7 @@ Sliding-window VaR computed by re-running the risk engine on each sub-period $[t
 
 ```python
 import numpy as np
-from src.portfolio import Portfolio, synthetic_portfolio, synthetic_ff_factors
+from portfolio import Portfolio, synthetic_portfolio, synthetic_ff_factors
 
 # Create a portfolio
 returns = synthetic_portfolio(n_assets=5, n_days=1260)
@@ -104,17 +104,16 @@ python setup.py build_ext --inplace
 ## Run the Demo
 
 ```bash
-cd 02_risk_engine/src
-python main.py                   # Synthetic data
-python main.py --real            # Real data via yfinance
-python main.py --real --ff       # Real data + Fama-French factors
+python 02_risk_engine/src/main.py                   # Synthetic data
+python 02_risk_engine/src/main.py --real            # Real data via yfinance
+python 02_risk_engine/src/main.py --real --ff       # Real data + Fama-French factors
 ```
 
 ## Run Tests
 
 ```bash
-cd 02_risk_engine
-python -m pytest tests/ -v
+# From the project root
+pytest 02_risk_engine/tests/ -v
 ```
 
 ## Performance (T=1260 obs, N=5 assets)

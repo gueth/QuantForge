@@ -11,13 +11,8 @@ Couvre :
   - Monte Carlo barrier option
 
 Lancement :
-    cd 01_pricing_engine
-    python -m pytest tests/ -v
+    pytest 01_pricing_engine/tests/ -v
 """
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 import numpy as np
 import pytest
 from scipy.stats import norm

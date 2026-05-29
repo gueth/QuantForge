@@ -92,9 +92,9 @@ Standard k-fold leaks information via serial correlation. Purged KFold (Lopez de
 ## Quick Start
 
 ```python
-from src.signals    import KalmanPairsSignal, synthetic_pair
-from src.backtest   import Backtest
-from src.validation import PurgedKFold
+from signals    import KalmanPairsSignal, synthetic_pair
+from backtest   import Backtest
+from validation import PurgedKFold
 
 # Generate a cointegrated pair
 y, x = synthetic_pair(n_days=1000, beta=0.8, seed=42)
@@ -126,15 +126,14 @@ The module falls back to pure NumPy if the extension is not compiled.
 ## Run the Demo
 
 ```bash
-cd 03_alpha_strategy/src
-python main.py
+python 03_alpha_strategy/src/main.py
 ```
 
 ## Run Tests
 
 ```bash
-cd 03_alpha_strategy
-python -m pytest tests/ -v
+# From the project root
+pytest 03_alpha_strategy/tests/ -v
 ```
 
 ## References

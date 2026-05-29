@@ -6,13 +6,8 @@ Covers: Portfolio, VaR/CVaR (mathematical invariants),
         Stress Testing, Rolling VaR.
 
 Run:
-    cd 02_risk_engine
-    python -m pytest tests/ -v
+    pytest 02_risk_engine/tests/ -v
 """
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 import numpy as np
 import pandas as pd
 import pytest
